@@ -977,9 +977,9 @@ img.onerror = () => resolve({
   }
 
   // shuffle — no repeats
-  const shuffled = shuffle([...itemsWithRatio]);
+  const sorted = [...itemsWithRatio].reverse();
 
-  shuffled.forEach((item, index) => {
+  sorted.forEach((item, index) => {
     const h   = Math.round(colW / item.ratio);
     const card = document.createElement('div');
     card.style.cssText = 'position:relative;overflow:hidden;cursor:pointer;background:#111;width:100%';
