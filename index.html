@@ -1088,35 +1088,47 @@ easing:'cubic-bezier(.25,.8,.25,1)'
 function renderLb(){
   const item=filtItems[lbIdx];
   if(!item)return;
-  const img=document.getElementById('lb-img');
-  const vid=document.getElementById('lb-vid');
-  const isV=item.type==='video';
+
+  const img   = document.getElementById('lb-img');
+  const thumb = document.getElementById('lb-thumb');
+  const vid   = document.getElementById('lb-vid');
+  const isV   = item.type==='video';
+
+  // reset both images first
+  img.src=''; img.style.opacity='0';
+  thumb.src=''; thumb.style.opacity='0';
+
   if(isV){
-    img.style.display='none';vid.style.display='block';
-    vid.src='public/'+item.hq;vid.play();
+    img.style.display='none';
+    thumb.style.display='none';
+    vid.style.display='block';
+    vid.src='public/'+item.hq;
+    vid.play();
   } else {
-    vid.style.display='none';vid.pause();vid.src='';
-    img.style.display='block';const thumb=document.getElementById('lb-thumb');
+    vid.style.display='none'; vid.pause(); vid.src='';
+    img.style.display='block';
+    thumb.style.display='block';
 
-thumb.src='public/'+item.thumb;
-thumb.style.opacity=1;
+    // show thumb immediately as placeholder
+    thumb.onload = () => { thumb.style.opacity='1'; };
+    thumb.src = 'public/'+item.thumb;
 
-img.style.opacity=0;
-
-const full=new Image();
-full.onload=()=>{
-  img.src=full.src;
-  img.onload=()=>{
-    img.style.opacity=1;
-    thumb.style.opacity=0;
-  };
-};
-full.src='public/'+item.hq;
+    // load HQ and swap
+    const full = new Image();
+    const targetHq = 'public/'+item.hq;
+    full.onload = () => {
+      // make sure user hasn't navigated away
+      if(filtItems[lbIdx] !== item) return;
+      img.src = targetHq;
+      img.style.opacity = '1';
+      thumb.style.opacity = '0';
+    };
+    full.src = targetHq;
   }
-  document.getElementById('lb-mt').textContent=item.title||'';
-  document.getElementById('lb-md').textContent=
-    [item.year,item.camera,item.lens].filter(Boolean).join(' · ');
-  document.getElementById('lb-ctr').textContent=`${lbIdx+1} / ${filtItems.length}`;
+
+  document.getElementById('lb-mt').textContent = item.title||'';
+  document.getElementById('lb-md').textContent = [item.year,item.camera,item.lens].filter(Boolean).join(' · ');
+  document.getElementById('lb-ctr').textContent = `${lbIdx+1} / ${filtItems.length}`;
 }
 function closeLb(){
 
