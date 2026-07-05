@@ -268,10 +268,33 @@ html,body{
 /* ══ LIGHTBOX ══ */
 #lb{
   position:fixed;inset:0;z-index:900;background:#000;
-  display:none;align-items:center;justify-content:center;
+  display:flex;
+opacity:0;
+pointer-events:none;
+transition:opacity .35s ease;align-items:center;justify-content:center;
 }
-#lb.on{display:flex}
-#lb-img{max-width:90vw;max-height:88vh;object-fit:contain;width:auto;height:auto}
+#lb.on{
+opacity:1;
+pointer-events:auto;
+}
+#lb-thumb,
+#lb-img{
+max-width:90vw;
+max-height:88vh;
+position:absolute;
+object-fit:contain;
+}
+
+#lb-thumb{
+filter:blur(18px);
+transform:scale(1.04);
+transition:opacity .35s;
+}
+
+#lb-img{
+opacity:0;
+transition:opacity .4s ease;
+}
 #lb-vid{max-width:90vw;max-height:88vh;display:none}
 .lb-x{
   position:absolute;top:18px;right:24px;
@@ -436,6 +459,7 @@ html,body{
   <button class="lb-x" onclick="closeLb()">✕</button>
   <div class="lb-ctr" id="lb-ctr"></div>
   <button class="lbn" id="lb-p" onclick="lbNav(-1)">‹</button>
+  <img id="lb-thumb" src="" alt=""/>
   <img id="lb-img" src="" alt=""/>
   <video id="lb-vid" controls loop></video>
   <button class="lbn" id="lb-n" onclick="lbNav(1)">›</button>
@@ -1043,6 +1067,21 @@ function closeSB(){
 // ── LIGHTBOX ───────────────────────────────
 function openLb(i){
   lbIdx=i;renderLb();
+  const lb=document.getElementById('lb');
+
+lb.animate(
+
+[
+{transform:'scale(.97)',opacity:0},
+{transform:'scale(1)',opacity:1}
+],
+
+{
+duration:350,
+easing:'cubic-bezier(.25,.8,.25,1)'
+}
+
+);
   document.getElementById('lb').classList.add('on');
   document.body.style.overflow='hidden';
 }
@@ -1057,7 +1096,30 @@ function renderLb(){
     vid.src='public/'+item.hq;vid.play();
   } else {
     vid.style.display='none';vid.pause();vid.src='';
-    img.style.display='block';img.src='public/'+item.hq;
+    img.style.display='block';const thumb=document.getElementById('lb-thumb');
+
+thumb.src='public/'+item.thumb;
+thumb.style.opacity=1;
+
+img.style.opacity=0;
+
+const full=new Image();
+
+full.onload=()=>{
+
+    img.src=full.src;
+
+    requestAnimationFrame(()=>{
+
+        img.style.opacity=1;
+
+        thumb.style.opacity=0;
+
+    });
+
+};
+
+full.src='public/'+item.hq;
   }
   document.getElementById('lb-mt').textContent=item.title||'';
   document.getElementById('lb-md').textContent=
@@ -1065,9 +1127,32 @@ function renderLb(){
   document.getElementById('lb-ctr').textContent=`${lbIdx+1} / ${filtItems.length}`;
 }
 function closeLb(){
-  document.getElementById('lb').classList.remove('on');
-  const v=document.getElementById('lb-vid');v.pause();v.src='';
-  document.body.style.overflow='';
+
+  const lb = document.getElementById('lb');
+
+  lb.animate(
+    [
+      { transform:'scale(1)', opacity:1 },
+      { transform:'scale(.97)', opacity:0 }
+    ],
+    {
+      duration:250,
+      easing:'ease'
+    }
+  );
+
+  setTimeout(() => {
+
+    lb.classList.remove('on');
+
+    const v = document.getElementById('lb-vid');
+    v.pause();
+    v.src = '';
+
+    document.body.style.overflow = '';
+
+  },220);
+
 }
 function lbNav(d){
   lbIdx=(lbIdx+d+filtItems.length)%filtItems.length;
