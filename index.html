@@ -61,56 +61,46 @@ html,body{
   backdrop-filter:blur(12px);
   -webkit-backdrop-filter:blur(12px);
 }
-#tb-left{display:flex;align-items:center;gap:16px;flex:1}
-#tb-back{
-  display:none;background:none;border:none;cursor:pointer;
-  font-size:18px;color:var(--gray);font-family:var(--f);
-  padding:0;transition:color .2s;line-height:1;
+#tb-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
 }
-#tb-back:hover{color:var(--text)}
+
+.bc-home{
+    font-size:11px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--gray);
+    cursor:pointer;
+    transition:.25s;
+}
+
+.bc-home:hover{
+    color:var(--text);
+}
+
+.bc-arrow{
+    color:rgba(255,255,255,.25);
+    font-size:13px;
+    transition:.25s;
+}
+
 #tb-cat{
-  display:none;
-  font-size:11px;letter-spacing:.22em;text-transform:uppercase;
-  color:var(--text);
+    font-size:11px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--text);
+}
+
+
+#tb-back:hover{color:var(--text)}
+
 }
 #tb-name{
   margin-left:auto;
   font-size:11px;letter-spacing:.25em;text-transform:uppercase;
   color:var(--gray);
-}
-
-#tb-left{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    flex:1;
-    font-size:11px;
-    letter-spacing:.18em;
-    text-transform:capitalize;
-}
-
-#bc-home{
-    cursor:pointer;
-    color:var(--gray);
-    transition:.25s;
-}
-
-#bc-home:hover{
-    color:#fff;
-}
-
-#bc-arrow{
-    color:rgba(255,255,255,.25);
-    transition:.25s;
-}
-
-#tb-left:hover #bc-arrow{
-    transform:translateX(-2px);
-    color:#fff;
-}
-
-#tb-cat{
-    color:#fff;
 }
 
 /* hamburger */
@@ -408,12 +398,11 @@ transition:opacity .4s ease;
 
 <!-- TOPBAR -->
 <div id="topbar">
-  <div id="tb-left" id="breadcrumb">
+<div id="tb-left" id="breadcrumb">
 
+    <span class="bc-home" onclick="goHome()">HOME</span>
 
-    <span id="bc-home" onclick="goHome()">‹Home</span>
-
-    
+    <span class="bc-arrow">›</span>
 
     <span id="tb-cat"></span>
 
@@ -708,11 +697,7 @@ setAppHeight();
   setTimeout(()=>{nm.classList.add('in');sb.classList.add('in')},150);
 
   DATA=SITE_DATA.categories;
-history.replaceState(
-    {page:'home'},
-    '',
-    location.pathname
-);
+
   setTimeout(()=>{
     nm.style.transition='transform .9s cubic-bezier(.77,0,.175,1),opacity .9s';
     nm.style.transform='translateY(-24px)';
@@ -966,18 +951,17 @@ async function openCat(ci){
   filtItems=[...cat.items];
 
   // topbar
-  document.getElementById('bc-home').style.display='inline';
-document.getElementById('bc-arrow').style.display='inline';
-document.getElementById('tb-cat').style.display='inline';
-  
+document.querySelector('.bc-home').style.display='block';
+document.querySelector('.bc-arrow').style.display='block';
   document.getElementById('tb-cat').textContent=cat.title;
+
+  await renderGrid(filtItems);
+  showPg('gallery',false); // false = no topbar reset (handled here)
 history.pushState(
     {page:'gallery',cat:ci},
     '',
     '#'+cat.id
 );
-  await renderGrid(filtItems);
-  showPg('gallery',false); // false = no topbar reset (handled here)
 }
 
 // ── JUSTIFIED GRID (masonry columns) ──────
@@ -1102,6 +1086,11 @@ function goHome(){
 
   document.querySelectorAll('#sidebar nav a').forEach(a=>a.classList.remove('act'));
   document.querySelector('#sidebar nav a[onclick*="\'home\'"]')?.classList.add('act');
+history.pushState(
+    {page:'home'},
+    '',
+    '#'
+);
 }
 
 // ── PAGES ──────────────────────────────────
@@ -1110,8 +1099,8 @@ function showPg(name, resetTopbar=true){
   document.getElementById('pg-'+name).classList.add('act');
   if(name!=='gallery') document.getElementById('pg-'+name).scrollTop=0;
   if(resetTopbar){
-   document.getElementById('bc-home').style.display='none';
-document.getElementById('bc-arrow').style.display='none';
+document.querySelector('.bc-home').style.display='none';
+document.querySelector('.bc-arrow').style.display='none';
 document.getElementById('tb-cat').style.display='none';
   }
   closeSB();
@@ -1252,12 +1241,15 @@ document.getElementById('lb').addEventListener('wheel',e=>{
 document.getElementById('lb').addEventListener('click',e=>{
   if(e.target===e.currentTarget)closeLb();
 });
-window.addEventListener('popstate',e=>{
+window.addEventListener('popstate', e => {
 
-    if(e.state && e.state.page==='gallery'){
-        openCat(e.state.cat);
-    }else{
+    if(!e.state || e.state.page === 'home'){
         goHome();
+        return;
+    }
+
+    if(e.state.page === 'gallery'){
+        openCat(e.state.cat);
     }
 
 });
