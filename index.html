@@ -932,9 +932,7 @@ async function openCat(ci){
   curCat=ci;
   const cat=DATA[ci];
   filtItems=[...cat.items];
- // برگرد به بالای صفحه
-  const gallery = document.getElementById('pg-gallery');
-  gallery.scrollTop = 0;
+
   // topbar
   document.getElementById('tb-back').style.display='block';
   document.getElementById('tb-sep').style.display='block';
@@ -943,6 +941,10 @@ async function openCat(ci){
 
   await renderGrid(filtItems);
   
+  setTimeout(()=>{
+    document.getElementById('pg-gallery').scrollTop = 0;
+},0);
+
   showPg('gallery',false); // false = no topbar reset (handled here)
 history.pushState(
     {page:'gallery',cat:ci},
