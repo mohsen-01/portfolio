@@ -934,6 +934,7 @@ async function openCat(ci){
 
   // topbar
   document.getElementById('tb-back').style.display='block';
+  document.querySelector('.bc-arrow').style.display='block';
   document.getElementById('tb-cat').style.display='block';
   document.getElementById('tb-cat').textContent=cat.title;
 
@@ -1082,6 +1083,7 @@ function showPg(name, resetTopbar=true){
   if(name!=='gallery') document.getElementById('pg-'+name).scrollTop=0;
   if(resetTopbar){
     document.getElementById('tb-back').style.display='none';
+	document.querySelector('.bc-arrow').style.display='none';
     document.getElementById('tb-cat').style.display='none';
   }
   closeSB();
