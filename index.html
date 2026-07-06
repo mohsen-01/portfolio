@@ -932,7 +932,9 @@ async function openCat(ci){
   curCat=ci;
   const cat=DATA[ci];
   filtItems=[...cat.items];
-
+ // برگرد به بالای صفحه
+  const gallery = document.getElementById('pg-gallery');
+  gallery.scrollTop = 0;
   // topbar
   document.getElementById('tb-back').style.display='block';
   document.getElementById('tb-sep').style.display='block';
@@ -1037,10 +1039,7 @@ img.onerror = () => resolve({
   // fade in
   requestAnimationFrame(() => requestAnimationFrame(() => { grid.style.opacity='1'; }));
 }
-gallery.scrollTo({
-    top:0,
-    behavior:"instant"
-});
+
 // ── GO HOME with cinematic back transition ──
 function goHome(){
 
