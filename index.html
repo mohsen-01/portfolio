@@ -117,9 +117,20 @@ html,body{
 }
 #sidebar.open{transform:translateX(0)}
 .sb-brand{
-  font-family:var(--fd);
-  font-size:15px;letter-spacing:.3em;text-transform:uppercase;
-  margin-bottom:52px;color:var(--text);
+  margin-bottom:52px;
+}
+.sb-logo{
+  display:block;
+  max-height:150px;
+  max-width:150px;
+  object-fit:contain;
+}
+.about-logo{
+  display:block;
+  max-height:200px;
+  max-width:200px;
+  object-fit:contain;
+  margin-bottom:28px;
 }
 #sidebar nav{display:flex;flex-direction:column;gap:4px}
 #sidebar nav a{
@@ -182,8 +193,8 @@ html,body{
   border-radius:10px;
 }
 
-.sl{position:absolute;inset:0;opacity:0;transition:opacity 1.5s ease}
-.sl.on{opacity:1}
+.sl{position:absolute;inset:0;opacity:0;z-index:1;will-change:transform}
+.sl.on{opacity:1;z-index:2}
 .sl img{
   width:100%;height:100%;
   object-fit:cover;
@@ -302,6 +313,7 @@ object-fit:contain;
 filter:blur(18px);
 transform:scale(1.04);
 transition:opacity .35s;
+clip-path:inset(0);
 }
 
 #lb-img{
@@ -323,6 +335,7 @@ transition:opacity .4s ease;
   position:absolute;top:50%;transform:translateY(-50%);
   background:none;border:none;color:rgba(255,255,255,.2);
   font-size:40px;cursor:pointer;padding:16px;transition:color .2s;
+  z-index:5;
 }
 .lbn:hover{color:var(--text)}
 #lb-p{left:0}#lb-n{right:0}
@@ -398,7 +411,7 @@ transition:opacity .4s ease;
 
 <!-- SIDEBAR -->
 <div id="sidebar">
-  <div class="sb-brand">FanStudio</div>
+  
   <nav>
     <a href="#" onclick="nav('home');return false" class="act">Home</a>
     <a href="#" onclick="nav('about');return false">About</a>
@@ -434,6 +447,7 @@ transition:opacity .4s ease;
   <!-- ABOUT -->
   <div id="pg-about" class="pg">
     <div class="pg-inner">
+      <img src="public/logo.svg" alt="Mohsen 01" class="about-logo"/>
       <h1 class="pg-ttl">Mohsen 01</h1>
       <p class="bio">Commercial photographer and visual storyteller based in Iran. Specialized in creating premium visual content for brands, products, and editorial clients through FanStudio.</p>
       <div class="a-cols">
@@ -503,6 +517,15 @@ function setAppHeight() {
 }
 
 window.addEventListener('resize', setAppHeight);
+
+// fallback: some mobile browsers block autoplay entirely until the user
+// interacts with the page — retry any still-paused metro videos then
+function kickAutoplayVideos(){
+  document.querySelectorAll('#metro video').forEach(v=>{
+    if(v.paused){ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); }
+  });
+}
+['touchstart','click'].forEach(evt=>document.addEventListener(evt,kickAutoplayVideos,{once:true,passive:true}));
 // ══════════════════════════════════════════════════════
 // DATA — اینجا عکس‌ها رو اضافه کن
 // thumb: مسیر عکس کم‌حجم (داخل public/thumbs/)
@@ -763,17 +786,94 @@ const TEMPLATES = [
   ]},
 ];
 
-// mobile: 2-col, 4 rows
-const MOBILE_TEMPLATE = { rows:4, areas:[
-  {c:'1/7', r:'1/2'},
-  {c:'7/13',r:'1/2'},
-  {c:'1/7', r:'2/3'},
-  {c:'7/13',r:'2/3'},
-  {c:'1/7', r:'3/4'},
-  {c:'7/13',r:'3/4'},
-  {c:'1/7', r:'4/5'},
-  {c:'7/13',r:'4/5'},
+// mobile: fixed "metro-style" layout — a hero tile, one tall tile, rest small.
+// Uses the same 12-col grid as desktop, split into a left/right half per row.
+// rowTemplate makes the hero's two rows smaller (~1.5x a normal tile instead of 2x).
+const MOBILE_TEMPLATE = { rows:6, rowTemplate:'0.75fr 0.75fr 1fr 1fr 1fr 1fr', areas:[
+  {c:'1/13', r:'1/3'},  // hero — full width, ~1.5x height
+  {c:'1/7',  r:'3/4'},
+  {c:'7/13', r:'3/4'},
+  {c:'1/7',  r:'4/6'},  // tall left
+  {c:'7/13', r:'4/5'},
+  {c:'7/13', r:'5/6'},
+  {c:'1/7',  r:'6/7'},
+  {c:'7/13', r:'6/7'},
 ]};
+
+// ── TILE MEDIA (random start + directional slide/roll transitions) ─
+// Builds all slide elements for a tile (photo or video), starts on a
+// random slide (not always the first). Each tile then rolls to a random
+// different slide on its own randomized timer (random direction too),
+// so tiles change independently — the random per-tile delay keeps them
+// from ever bunching up and changing all together.
+function buildTileMedia(tile,cat){
+  const items=cat.items.slice(0,6);
+  if(items.length===0)return;
+
+  const slides=items.map(item=>{
+    const isVideo = item.type==='video' || /\.(mp4|mov|webm)$/i.test(item.thumb||'');
+    const s=document.createElement('div');
+    s.className='sl';
+    tile.appendChild(s);
+    if(isVideo){
+      s.innerHTML=`<video src="public/${item.thumb}" autoplay loop muted playsinline webkit-playsinline="true"></video>`;
+      const v=s.querySelector('video');
+      const tryPlay=()=>{ const p=v.play(); if(p&&p.catch)p.catch(()=>{}); };
+      tryPlay();
+      v.addEventListener('loadeddata',tryPlay);
+      v.addEventListener('canplay',tryPlay);
+    } else {
+      s.innerHTML=`<img src="public/${item.thumb}" loading="lazy" alt="${cat.title}"/>`;
+    }
+    return s;
+  });
+
+  // randomized starting slide — not always the first item
+  let curIdx=Math.floor(Math.random()*slides.length);
+  slides[curIdx].classList.add('on');
+  slides[curIdx].style.transform='translate(0,0)';
+
+  if(slides.length<2)return;
+
+  const DIRS=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+
+  function roll(){
+    let nextIdx;
+    do{ nextIdx=Math.floor(Math.random()*slides.length); }while(nextIdx===curIdx);
+    const d=DIRS[Math.floor(Math.random()*DIRS.length)];
+    const outEl=slides[curIdx], inEl=slides[nextIdx];
+
+    inEl.style.transition='none';
+    inEl.style.transform=`translate(${d.x*100}%, ${d.y*100}%)`;
+    inEl.classList.add('on');
+    void inEl.offsetWidth; // force reflow
+
+    inEl.style.transition='transform .85s cubic-bezier(.65,0,.35,1)';
+    outEl.style.transition='transform .85s cubic-bezier(.65,0,.35,1)';
+    requestAnimationFrame(()=>{
+      inEl.style.transform='translate(0,0)';
+      outEl.style.transform=`translate(${-d.x*100}%, ${-d.y*100}%)`;
+    });
+
+    setTimeout(()=>{
+      outEl.classList.remove('on');
+      outEl.style.transition='none';
+      outEl.style.transform='translate(0,0)';
+    },870);
+
+    curIdx=nextIdx;
+  }
+
+  function scheduleNext(delay){
+    setTimeout(()=>{
+      roll();
+      scheduleNext(5000+Math.random()*3000); // next change: random 5-8s
+    },delay);
+  }
+
+  // first change per tile: random 4-8s — staggers the initial start
+  scheduleNext(4000+Math.random()*4000);
+}
 
 // ── BUILD METRO ────────────────────────────
 // saved layout — set once on load, reused on back
@@ -795,12 +895,19 @@ function buildMetro(reuse=false){
   const isMobile=window.innerWidth<=700;
   if(!reuse || !_savedTpl){
     _savedTpl = isMobile ? MOBILE_TEMPLATE : TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
-    _savedCats = shuffle([...DATA]);
+    if(isMobile){
+      // pin Observations to the hero tile (its name is long and gets clipped in small tiles)
+      const obs = DATA.find(c=>c.id==='observations');
+      const rest = shuffle(DATA.filter(c=>c.id!=='observations'));
+      _savedCats = obs ? [obs, ...rest] : shuffle([...DATA]);
+    } else {
+      _savedCats = shuffle([...DATA]);
+    }
   }
   const tpl = _savedTpl;
   const cats = _savedCats;
 
-  metro.style.gridTemplateRows=`repeat(${tpl.rows},1fr)`;
+  metro.style.gridTemplateRows = tpl.rowTemplate ? tpl.rowTemplate : `repeat(${tpl.rows},1fr)`;
 
   cats.forEach((cat,i)=>{
     if(i>7)return; // max 8 tiles
@@ -810,59 +917,7 @@ function buildMetro(reuse=false){
     tile.style.gridColumn=area.c;
     tile.style.gridRow=area.r;
 
-    // for Motion category: show looping video in tile
-    const isMotion=cat.id==='motion';
-    if(isMotion && cat.items[0]){
-      const s=document.createElement('div');
-      s.className='sl on';
-      const thumb=cat.items[0].thumb;
-      if(thumb && thumb.match(/\.(mp4|mov|webm)$/i)){
-        s.innerHTML=`<video src="public/${thumb}" autoplay loop muted playsinline></video>`;
-      } else {
-        s.innerHTML=`<img src="public/${thumb}" loading="lazy" alt="${cat.title}"/>`;
-      }
-      tile.appendChild(s);
-    } else {
-      // slides — support both jpg and mp4 thumbs
-      const isMotionCat = cat.items.some(it => it.type === 'video');
-
-      if(isMotionCat){
-        // video: single element, swap src on interval
-        const s = document.createElement('div');
-        s.className = 'sl on';
-        const vidEl = document.createElement('video');
-        vidEl.autoplay=true; vidEl.loop=true; vidEl.muted=true; vidEl.playsInline=true;
-        vidEl.style.cssText='width:100%;height:100%;object-fit:cover;filter:brightness(.5)';
-        vidEl.src = 'public/' + cat.items[0].thumb;
-        s.appendChild(vidEl);
-        tile.appendChild(s);
-        if(cat.items.length > 1){
-          let vi = 0;
-          setInterval(()=>{
-            vi = (vi+1) % cat.items.length;
-            vidEl.src = 'public/' + cat.items[vi].thumb;
-            vidEl.play();
-          }, 6000 + i*400);
-        }
-      } else {
-        // photo: opacity slideshow
-        cat.items.slice(0,5).forEach((item,ii)=>{
-          const s=document.createElement('div');
-          s.className='sl'+(ii===0?' on':'');
-          s.innerHTML=`<img src="public/${item.thumb}" loading="lazy" alt="${cat.title}"/>`;
-          tile.appendChild(s);
-        });
-        if(cat.items.length>1){
-          let idx=0;
-          setInterval(()=>{
-            const ss=tile.querySelectorAll('.sl');
-            ss[idx].classList.remove('on');
-            idx=(idx+1)%ss.length;
-            ss[idx].classList.add('on');
-          },5000+i*350);
-        }
-      }
-    }
+    buildTileMedia(tile,cat);
 
     const lbl=document.createElement('div');
     lbl.className='tile-lbl';
@@ -928,7 +983,7 @@ function zoomTransition(tile,catIdx){
 }
 
 // ── OPEN CATEGORY ──────────────────────────
-async function openCat(ci){
+async function openCat(ci, fromPop=false){
   curCat=ci;
   const cat=DATA[ci];
   filtItems=[...cat.items];
@@ -946,11 +1001,14 @@ async function openCat(ci){
 },0);
 
   showPg('gallery',false); // false = no topbar reset (handled here)
-history.pushState(
-    {page:'gallery',cat:ci},
-    '',
-    '#'+cat.id
-);
+
+  if(!fromPop){
+    history.pushState(
+        {page:'gallery',cat:ci},
+        '',
+        '#'+cat.id
+    );
+  }
 }
 
 // ── JUSTIFIED GRID (masonry columns) ──────
@@ -1043,43 +1101,60 @@ img.onerror = () => resolve({
 }
 
 // ── GO HOME with cinematic back transition ──
-function goHome(){
+function goHome(fromPop=false){
 
   const trans=document.getElementById('trans');
   const transTitle=document.getElementById('trans-title');
   const grid=document.querySelector('.photo-grid');
+  const wrap=document.getElementById('wrap');
 
   // fade out gallery
   if(grid) grid.classList.remove('in');
 
-  // PHASE 1: fade to black
-  trans.style.transition='opacity .35s ease';
-  trans.classList.add('fade-in');
+  if(fromPop){
+    // lightweight transition for native swipe-back / browser back —
+    // no black overlay flash, just a quick smooth crossfade
+    wrap.style.transition='opacity .22s ease';
+    wrap.style.opacity='0';
+    setTimeout(()=>{
+      buildMetro(true);
+      showPg('home',true);
+      requestAnimationFrame(()=>{ wrap.style.opacity='1'; });
+    },160);
+    setTimeout(()=>{ wrap.style.transition=''; },500);
+  } else {
+    // PHASE 1: fade to black
+    trans.style.transition='opacity .35s ease';
+    trans.classList.add('fade-in');
 
-  // PHASE 2: rebuild home behind overlay
-  setTimeout(()=>{
-    buildMetro(true); // reuse same layout
-    showPg('home',true);
-  },380);
+    // PHASE 2: rebuild home behind overlay
+    setTimeout(()=>{
+      buildMetro(true); // reuse same layout
+      showPg('home',true);
+    },380);
 
-  // PHASE 3: fade out overlay → reveal home
-  setTimeout(()=>{
-    trans.style.transition='opacity .6s ease';
-    trans.classList.remove('fade-in');
-  },600);
+    // PHASE 3: fade out overlay → reveal home
+    setTimeout(()=>{
+      trans.style.transition='opacity .6s ease';
+      trans.classList.remove('fade-in');
+    },600);
 
-  setTimeout(()=>{
-    trans.style.transition='';
-    transTitle.textContent='';
-  },1300);
+    setTimeout(()=>{
+      trans.style.transition='';
+      transTitle.textContent='';
+    },1300);
+  }
 
   document.querySelectorAll('#sidebar nav a').forEach(a=>a.classList.remove('act'));
   document.querySelector('#sidebar nav a[onclick*="\'home\'"]')?.classList.add('act');
-history.pushState(
-    {page:'home'},
-    '',
-    '#'
-);
+
+  if(!fromPop){
+    history.pushState(
+        {page:'home'},
+        '',
+        '#'
+    );
+  }
 }
 
 // ── PAGES ──────────────────────────────────
@@ -1179,6 +1254,11 @@ function renderLb(){
       img.style.opacity = '1';
       thumb.style.opacity = '0';
     };
+    full.onerror = () => {
+      // HQ failed to load — at least don't leave the blurred placeholder stuck
+      if(filtItems[lbIdx] !== item) return;
+      thumb.style.opacity = '1';
+    };
     full.src = targetHq;
   }
 
@@ -1230,15 +1310,37 @@ document.getElementById('lb').addEventListener('wheel',e=>{
 document.getElementById('lb').addEventListener('click',e=>{
   if(e.target===e.currentTarget)closeLb();
 });
+
+// swipe navigation (touch)
+(function(){
+  const lb=document.getElementById('lb');
+  let sx=0, sy=0, tracking=false;
+  lb.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1)return;
+    sx=e.touches[0].clientX;
+    sy=e.touches[0].clientY;
+    tracking=true;
+  },{passive:true});
+  lb.addEventListener('touchend',e=>{
+    if(!tracking)return;
+    tracking=false;
+    const dx=e.changedTouches[0].clientX-sx;
+    const dy=e.changedTouches[0].clientY-sy;
+    // require a mostly-horizontal swipe of decent length
+    if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.5){
+      lbNav(dx<0?1:-1);
+    }
+  },{passive:true});
+})();
 window.addEventListener('popstate', e => {
 
     if(!e.state || e.state.page === 'home'){
-        goHome();
+        goHome(true);
         return;
     }
 
     if(e.state.page === 'gallery'){
-        openCat(e.state.cat);
+        openCat(e.state.cat, true);
     }
 
 });
