@@ -418,6 +418,7 @@ cursor:zoom-in;
   .gi-b{grid-column:span 6}
   .gi-c,.gi-e{grid-column:span 3}
   .a-cols{grid-template-columns:1fr}
+<<<<<<< HEAD
 
   /* mobile tiles are much smaller than desktop — trim the label BOX here,
      not the text (the font size itself was already fine) */
@@ -425,4 +426,6 @@ cursor:zoom-in;
   .tile-lbl-t{font-size:18px;letter-spacing:.16em}
   .tile:hover .tile-lbl-t{letter-spacing:.16em}
   .tile-lbl-c{font-size:9px;margin-top:3px}
+=======
+>>>>>>> b7a6ef9975f236e0343fa16f3fd13a8e834065c3
 }
