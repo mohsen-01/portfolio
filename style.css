@@ -9,7 +9,6 @@
   --gap:10px;
   --tb:50px;
   --f:'Inter',sans-serif;
-  --fd:'DM Serif Display',serif;
 }
 html,body{
   width:100%;height:100%;overflow:hidden;
@@ -197,7 +196,7 @@ img,video{
 .tile{
   position:relative;overflow:hidden;cursor:pointer;
   background:var(--card);
-  border-radius:10px;
+  border-radius:0;
 }
 
 .sl{position:absolute;inset:0;opacity:0;z-index:1;will-change:transform}
@@ -214,14 +213,14 @@ img,video{
 /* tile label — bottom center, not middle */
 .tile-lbl{
   position:absolute;bottom:0;left:0;right:0;
-  padding:28px 16px 18px;
-  background:linear-gradient(transparent 0%,rgba(0,0,0,.85) 100%) bottom/100% 100% no-repeat;
-  z-index:2;
+  padding:14px 14px 10px;
+  background:rgba(0,0,0,.4);
+  z-index:3;
   display:flex;flex-direction:column;align-items:center;
   text-align:center;
 }
 .tile-lbl-t{
-  font-family:var(--fd);
+  font-family:var(--f);
   font-size:clamp(20px,2vw,40px);
   font-weight:300;letter-spacing:.18em;text-transform:uppercase;
   text-shadow:0 2px 16px rgba(0,0,0,.8);
@@ -250,6 +249,13 @@ img,video{
 }
 .loader-line.lt{top:0}
 .loader-line.lb{bottom:0}
+/* kicks in only if loading takes a while (see JS) — a quiet breathing pulse
+   so a slow connection still reads as "working", not frozen */
+@keyframes loaderPulse{
+  0%,100%{opacity:.9}
+  50%{opacity:.3}
+}
+.loader-line.pulse{animation:loaderPulse 1.6s ease-in-out infinite}
 
 .flash{
   position:absolute;inset:0;z-index:3;
@@ -268,7 +274,7 @@ img,video{
 }
 #trans.fade-in{opacity:1}
 #trans-title{
-  font-family:var(--fd);
+  font-family:var(--f);
   font-size:clamp(28px,5vw,64px);font-weight:300;
   letter-spacing:.2em;text-transform:uppercase;
   opacity:0;transform:translateY(10px);
@@ -412,4 +418,11 @@ cursor:zoom-in;
   .gi-b{grid-column:span 6}
   .gi-c,.gi-e{grid-column:span 3}
   .a-cols{grid-template-columns:1fr}
+
+  /* mobile tiles are much smaller than desktop — trim the label BOX here,
+     not the text (the font size itself was already fine) */
+  .tile-lbl{padding:8px 8px 6px}
+  .tile-lbl-t{font-size:18px;letter-spacing:.16em}
+  .tile:hover .tile-lbl-t{letter-spacing:.16em}
+  .tile-lbl-c{font-size:9px;margin-top:3px}
 }
